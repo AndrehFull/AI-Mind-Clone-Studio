@@ -1,128 +1,132 @@
-# 🧠 Mind Clone Studio
+<div align="center">
 
-Plataforma open source para criar o **clone digital da mente de qualquer pessoa**. Você cadastra uma _persona_, alimenta ela com documentos (PDF, texto, transcrições), e então **conversa** com o clone ou pede uma **análise estruturada** — tudo com RAG (Retrieval-Augmented Generation) sobre a base de conhecimento daquela pessoa.
+# Mind Clone Studio
 
-> O clone de **Eugene Schwartz** (lendário copywriter, autor de _Breakthrough Advertising_) vem como persona de exemplo.
+Crie o clone digital da mente de qualquer pessoa. Alimente com documentos, converse e gere análises, tudo apoiado em RAG sobre uma base de conhecimento própria de cada persona.
 
----
+![License](https://img.shields.io/badge/license-MIT-blue)
+![Next.js](https://img.shields.io/badge/Next.js-14-000000)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6)
+![Postgres](https://img.shields.io/badge/Postgres-pgvector-336791)
+![OpenAI](https://img.shields.io/badge/OpenAI-embeddings%20%2B%20chat-412991)
 
-## ✨ Recursos
+<img src="docs/screenshots/home.png" alt="Mind Clone Studio" width="860">
 
-- **Múltiplas personas** — cada uma com nome, voz (system prompt) e sua própria base de conhecimento.
-- **Conversar** — chat com streaming, respostas ancoradas nos documentos da persona.
-- **Análise estruturada** — para personas que habilitam, devolve JSON validado (ex.: análise de leads do Eugene).
-- **Conhecimento no próprio app** — cole texto ou suba arquivos (PDF/TXT/MD); o app faz _chunk → embedding → Postgres_ automaticamente.
-- **100% em código** — sem n8n, sem webhooks externos. Você roda com suas próprias chaves.
-- **Sobe com Docker** — `docker compose up` levanta app + Postgres/pgvector com schema e seed automáticos.
+</div>
 
-## 🏗️ Arquitetura
+## Visão geral
 
-```
-Next.js 14 (App Router)
- ├─ app/api/personas/...      → REST: CRUD de personas, documentos, chat, análise
- ├─ lib/                      → openai (embeddings/chat), rag, ingest, supabase, chunk
- └─ components/               → UI (grid, workspace 3D, chat, análise, conhecimento)
+Mind Clone Studio reproduz a forma de pensar e responder de uma pessoa. Você cadastra uma persona, dá a ela uma base de conhecimento (PDFs, textos, transcrições) e passa a conversar com o clone ou a pedir análises estruturadas. Cada resposta é fundamentada nos documentos daquela persona, recuperados por busca vetorial.
 
-OpenAI        → embeddings (text-embedding-3-large, 3072 dims) + chat
-Postgres      → pgvector (tabelas personas e documents), via driver `pg`
-```
+O projeto começou como um clone específico de Eugene Schwartz, autor de *Breakthrough Advertising*, que hoje acompanha o repositório como persona de exemplo.
 
-Pipeline de runtime (igual ao antigo fluxo n8n, agora em código):
+## Telas
 
-`lead/pergunta → embedding (OpenAI) → match_documents (pgvector, filtrado por persona) → contexto → chat/JSON (OpenAI) → resposta`
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/workspace.png" alt="Conversa com a persona"></td>
+    <td width="50%"><img src="docs/screenshots/new-persona.png" alt="Criação de persona"></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>Workspace da persona: conversa, análise e conhecimento</sub></td>
+    <td align="center"><sub>Criação de um novo clone</sub></td>
+  </tr>
+</table>
 
-## 🐳 Subindo com Docker (recomendado para testar)
+## Como funciona
+
+Cada interação segue o mesmo pipeline:
+
+1. O texto do usuário vira um embedding (OpenAI `text-embedding-3-large`, 3072 dimensões).
+2. Uma busca por similaridade no Postgres com pgvector traz os trechos mais relevantes da base daquela persona.
+3. Esses trechos entram como contexto no prompt.
+4. O modelo de chat responde na voz da persona (modo conversa) ou devolve um JSON estruturado (modo análise).
+
+A vetorização é feita pela API da OpenAI. O Postgres apenas armazena e pesquisa os vetores, o que permite manter o banco totalmente local.
+
+## Recursos
+
+* Múltiplas personas, cada uma com voz própria (system prompt) e base de conhecimento isolada.
+* Conversa com streaming de respostas.
+* Análise estruturada em JSON para personas que habilitam esse modo.
+* Ingestão de conhecimento dentro do app: cole texto ou suba arquivos (PDF, TXT, MD).
+* Sobe com um comando via Docker, com banco e dados de exemplo já provisionados.
+
+## Stack
+
+Next.js 14 (App Router) e TypeScript, OpenAI para embeddings e chat, Postgres com pgvector como vector store, e Three.js na visualização do cérebro.
+
+## Começando com Docker
 
 ```bash
-cp .env.example .env.local      # preencha OPENAI_API_KEY
-npm run docker:up               # = docker compose up --build
+cp .env.example .env.local   # preencha OPENAI_API_KEY
+npm run docker:up
 ```
-Isso sobe o app + um Postgres com pgvector totalmente local (o `db/schema.sql` e o `db/seed.sql` rodam automaticamente na primeira vez). Acesse http://localhost:3000.
 
-### Scripts disponíveis
-| Script | O que faz |
-|--------|-----------|
-| `npm run docker:up` | sobe app + banco |
+Acesse http://localhost:3000. Na primeira execução o banco é criado e populado automaticamente a partir de `db/schema.sql` e `db/seed.sql`.
+
+> Os embeddings e o chat usam a API da OpenAI, então a `OPENAI_API_KEY` é obrigatória. Apenas o banco roda localmente.
+
+### Scripts
+
+| Script | Função |
+|--------|--------|
+| `npm run docker:up` | sobe o app e o banco |
 | `npm run docker:down` | derruba os containers |
-| `npm run docker:reset` | derruba **e apaga o volume** do banco (re-seed do zero) |
-| `npm run docker:logs` | segue os logs (debug) |
+| `npm run docker:reset` | derruba e apaga o volume do banco (recria do zero) |
+| `npm run docker:logs` | acompanha os logs |
 
-> Só o banco é local — os embeddings e o chat continuam usando a API da OpenAI, então a `OPENAI_API_KEY` é obrigatória.
+## Desenvolvimento com hot-reload
 
-Para ingerir documentos em massa contra o banco do compose:
-```bash
-DATABASE_URL=postgres://postgres:postgres@localhost:5432/mindclone \
-  npm run ingest -- --persona eugene-schwartz ./livro.pdf
-```
-
-## 🚀 Começando (sem Docker)
-
-### 1. Pré-requisitos
-- Node.js 18+
-- Uma conta [OpenAI](https://platform.openai.com/) (API key)
-- Um Postgres com **pgvector**: um local (`pgvector/pgvector`) ou um projeto [Supabase](https://supabase.com/)
-
-### 2. Instalar
-```bash
-npm install
-```
-
-### 3. Configurar variáveis de ambiente
-```bash
-cp .env.example .env.local
-```
-Preencha `.env.local` com a `OPENAI_API_KEY` e a `DATABASE_URL` do seu Postgres.
-
-### 4. Rodar (modo dev com hot-reload)
 ```bash
 npm run dev
 ```
-`npm run dev` **sobe o Postgres local no Docker automaticamente** (via `predev`) e inicia o Next com hot-reload em http://localhost:3000. Na primeira vez o banco já é criado e populado pelo `db/schema.sql` + `db/seed.sql`.
 
-> **Usando um Postgres externo (ex.: Supabase)?** Rode o schema/seed nele uma vez
-> (`psql "$DATABASE_URL" -f db/schema.sql` e `-f db/seed.sql`, ou cole no SQL Editor),
-> ajuste a `DATABASE_URL` no `.env.local` e rode `npx next dev` (sem o `predev`, que sobe o banco local).
+O comando sobe o Postgres no Docker automaticamente (via `predev`) e inicia o Next com hot-reload. Para usar um Postgres externo (por exemplo Supabase), rode o `db/schema.sql` e o `db/seed.sql` nele, ajuste a `DATABASE_URL` no `.env.local` e use `npx next dev`.
 
-## 📚 Adicionando conhecimento
+## Adicionando conhecimento
 
-**Pelo app:** abra uma persona → aba **Conhecimento** → cole texto ou suba um arquivo.
+Pelo app, abra uma persona, vá na aba Conhecimento e cole um texto ou suba um arquivo.
 
-**Em massa (CLI):**
+Em massa, pela linha de comando:
+
 ```bash
-npm run ingest -- --persona eugene-schwartz ./caminho/para/livro.pdf
+npm run ingest -- --persona eugene-schwartz ./livro.pdf
 npm run ingest -- --persona eugene-schwartz ./pasta-com-documentos
 ```
 
-## 🔌 API
+## API
 
 | Método | Rota | Descrição |
 |--------|------|-----------|
-| `GET/POST` | `/api/personas` | listar / criar personas |
-| `GET/PATCH/DELETE` | `/api/personas/:id` | obter / editar / excluir |
-| `GET/POST/DELETE` | `/api/personas/:id/documents` | fontes / adicionar texto / remover fonte |
+| `GET`, `POST` | `/api/personas` | listar e criar personas |
+| `GET`, `PATCH`, `DELETE` | `/api/personas/:id` | obter, editar e excluir |
+| `GET`, `POST`, `DELETE` | `/api/personas/:id/documents` | fontes, adicionar texto e remover fonte |
 | `POST` | `/api/personas/:id/documents/upload` | subir arquivo (multipart) |
-| `POST` | `/api/personas/:id/chat` | chat (stream de texto) |
-| `POST` | `/api/personas/:id/analyze` | análise estruturada (JSON) |
+| `POST` | `/api/personas/:id/chat` | conversa com streaming |
+| `POST` | `/api/personas/:id/analyze` | análise estruturada em JSON |
 
-## ⚙️ Configuração
+## Configuração
 
 | Variável | Padrão | Descrição |
 |----------|--------|-----------|
-| `OPENAI_API_KEY` | — | chave da OpenAI (embeddings + chat) |
-| `OPENAI_EMBED_MODEL` | `text-embedding-3-large` | **deve** casar com a dimensão 3072 do schema |
-| `OPENAI_CHAT_MODEL` | `gpt-4o` | qualquer modelo de chat da OpenAI (ex.: `gpt-5`) |
-| `DATABASE_URL` | — | string de conexão Postgres+pgvector (local ou Supabase direct connection) |
+| `OPENAI_API_KEY` | obrigatória | chave da OpenAI (embeddings e chat) |
+| `OPENAI_EMBED_MODEL` | `text-embedding-3-large` | precisa casar com a dimensão 3072 do schema |
+| `OPENAI_CHAT_MODEL` | `gpt-4o` | qualquer modelo de chat da OpenAI |
+| `DATABASE_URL` | local | conexão Postgres com pgvector (local ou Supabase) |
 
-> **Nota sobre embeddings:** a tabela `documents` usa `vector(3072)`. Se trocar para `text-embedding-3-small` (1536 dims), ajuste o schema. O pgvector não indexa vetores com mais de 2000 dimensões, então a busca em 3072 é sequencial (ok para bases por-persona).
+A tabela `documents` usa `vector(3072)`. Para trocar por `text-embedding-3-small` (1536 dimensões), ajuste o schema e o `.env.local`. O pgvector não indexa vetores acima de 2000 dimensões, então a busca em 3072 é sequencial, o que atende bem a uma base por persona.
 
-## 📁 Estrutura
+## Estrutura
+
 ```
-app/            páginas (home, /personas/new, /personas/[id]) + API routes
-components/     UI: PersonaCard, PersonaForm, persona/* (workspace, chat, análise, conhecimento), Brain3D
-lib/            openai, supabase, rag, ingest, chunk, personas, documents, env, types
-db/             schema.sql, seed.sql
-scripts/        ingest.ts (CLI)
+app/            páginas e API routes
+components/     UI (persona/, Brain3D, cards e formulários)
+lib/            db, openai, rag, ingest, chunk, personas, documents, env, types
+db/             schema.sql e seed.sql
+scripts/        ingest.ts (CLI de ingestão)
 ```
 
-## 📄 Licença
-MIT.
+## Licença
+
+MIT. Veja [LICENSE](LICENSE).
