@@ -354,45 +354,51 @@ function EnhancedNeuralNodes({ isProcessing = false }: { isProcessing?: boolean 
 
   return (
     <group ref={nodesRef}>
-      {nodes.map((node, index) => {
-        const nodeRef = useRef<any>(null)
-        
-        useFrame((state) => {
-          if (nodeRef.current) {
-            const time = state.clock.elapsedTime
-            if (isProcessing) {
-              // Animação intensa durante processamento
-              const pulse = Math.sin(time * 5 + index * 0.4) * 0.4 + 0.6
-              const wave = Math.sin(time * 2 + index * 0.2) * 0.3
-              nodeRef.current.material.emissiveIntensity = pulse * 1.0
-              nodeRef.current.scale.setScalar(1 + pulse * 0.3 + wave * 0.2)
-            } else {
-              // Animação suave quando não processando
-              const pulse = Math.sin(time * 2 + index * 0.3) * 0.2 + 0.8
-              nodeRef.current.material.emissiveIntensity = pulse * 0.3
-              nodeRef.current.scale.setScalar(1 + pulse * 0.1)
-            }
-          }
-        })
-        
-        return (
-          <mesh
-            key={index}
-            ref={nodeRef}
-            position={node.position}
-          >
-            <sphereGeometry args={[node.size, 12, 12]} />
-            <meshStandardMaterial
-              color={node.color}
-              transparent
-              opacity={isProcessing ? 0.9 : 0.7}
-              emissive={node.color}
-              emissiveIntensity={isProcessing ? 0.8 : 0.3}
-            />
-          </mesh>
-        )
-      })}
+      {nodes.map((node, index) => (
+        <NeuralNodeMesh key={index} node={node} index={index} isProcessing={isProcessing} />
+      ))}
     </group>
+  )
+}
+
+// Single animated neural node — extracted so hooks are not called inside a map().
+function NeuralNodeMesh({
+  node,
+  index,
+  isProcessing,
+}: {
+  node: { position: [number, number, number]; color: string; size: number; layer: number }
+  index: number
+  isProcessing: boolean
+}) {
+  const nodeRef = useRef<any>(null)
+
+  useFrame((state) => {
+    if (!nodeRef.current) return
+    const time = state.clock.elapsedTime
+    if (isProcessing) {
+      const pulse = Math.sin(time * 5 + index * 0.4) * 0.4 + 0.6
+      const wave = Math.sin(time * 2 + index * 0.2) * 0.3
+      nodeRef.current.material.emissiveIntensity = pulse * 1.0
+      nodeRef.current.scale.setScalar(1 + pulse * 0.3 + wave * 0.2)
+    } else {
+      const pulse = Math.sin(time * 2 + index * 0.3) * 0.2 + 0.8
+      nodeRef.current.material.emissiveIntensity = pulse * 0.3
+      nodeRef.current.scale.setScalar(1 + pulse * 0.1)
+    }
+  })
+
+  return (
+    <mesh ref={nodeRef} position={node.position}>
+      <sphereGeometry args={[node.size, 12, 12]} />
+      <meshStandardMaterial
+        color={node.color}
+        transparent
+        opacity={isProcessing ? 0.9 : 0.7}
+        emissive={node.color}
+        emissiveIntensity={isProcessing ? 0.8 : 0.3}
+      />
+    </mesh>
   )
 }
 

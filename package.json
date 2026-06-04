@@ -1,15 +1,26 @@
 {
-  "name": "eugene-schwartz-brain",
+  "name": "mind-clone-studio",
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "docker compose up -d --wait db",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "ingest": "tsx scripts/ingest.ts",
+    "docker:up": "docker compose up --build",
+    "docker:down": "docker compose down",
+    "docker:reset": "docker compose down -v",
+    "docker:logs": "docker compose logs -f"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.0.2",
+    "openai": "^4.67.3",
+    "pdf-parse": "^1.1.1",
+    "pg": "^8.13.1",
+    "react-markdown": "^9.0.1",
+    "remark-gfm": "^4.0.0",
     "@react-three/drei": "^9.92.7",
     "@react-three/fiber": "^8.18.0",
     "@types/react-syntax-highlighter": "^15.5.11",
@@ -27,6 +38,9 @@
   },
   "devDependencies": {
     "@types/node": "^20.8.7",
+    "@types/pdf-parse": "^1.1.4",
+    "@types/pg": "^8.11.10",
+    "tsx": "^4.19.1",
     "@types/react": "^18.2.31",
     "@types/react-dom": "^18.2.14",
     "autoprefixer": "^10.4.16",

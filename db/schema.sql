@@ -1,38 +1,92 @@
--- Ativar extensão pgvector (só precisa rodar 1 vez no banco)
-CREATE EXTENSION IF NOT EXISTS vector;
+-- ============================================================================
+-- Mind Clone Studio — database schema (Supabase / Postgres + pgvector)
+-- Run this once on a fresh database (Supabase SQL editor or psql).
+-- ============================================================================
 
--- Criar tabela para armazenar documentos
-CREATE TABLE documents (
-  id BIGSERIAL PRIMARY KEY,
-  content TEXT,       -- texto do documento
-  metadata JSONB,     -- metadados associados
-  embedding VECTOR(3072) -- 1536 dimensões (OpenAI ada-002)
+-- Required extensions ---------------------------------------------------------
+create extension if not exists vector;     -- pgvector: embeddings + similarity
+create extension if not exists pgcrypto;   -- gen_random_uuid()
+
+-- ----------------------------------------------------------------------------
+-- personas: one row per digital clone (a person whose "mind" we reproduce)
+-- ----------------------------------------------------------------------------
+create table if not exists personas (
+  id              uuid primary key default gen_random_uuid(),
+  slug            text unique not null,          -- url-friendly identifier
+  name            text not null,
+  title           text,                          -- short tagline / role
+  description     text,                          -- shown on the persona card
+  avatar_url      text,
+  system_prompt   text not null,                 -- how the clone thinks/speaks
+  analysis_prompt text,                          -- enables structured-analysis mode
+  analysis_schema jsonb,                          -- example JSON of the analysis output
+  created_at      timestamptz not null default now(),
+  updated_at      timestamptz not null default now()
 );
 
--- Criar função de busca semântica
-CREATE OR REPLACE FUNCTION match_documents (
-  query_embedding VECTOR(3072),
-  match_count INT DEFAULT 5,
-  filter JSONB DEFAULT '{}'::jsonb
+-- ----------------------------------------------------------------------------
+-- documents: the knowledge base. Each row is a chunk of a source document,
+-- vectorised with OpenAI text-embedding-3-large (3072 dims) and tied to a persona.
+-- ----------------------------------------------------------------------------
+create table if not exists documents (
+  id          bigserial primary key,
+  persona_id  uuid references personas(id) on delete cascade,
+  content     text,                              -- chunk text
+  metadata    jsonb not null default '{}'::jsonb, -- { source, chunk_index, ... }
+  embedding   vector(3072),                      -- text-embedding-3-large
+  created_at  timestamptz not null default now()
+);
+
+create index if not exists documents_persona_id_idx on documents (persona_id);
+
+-- NOTE: pgvector's ivfflat/hnsw indexes support a maximum of 2000 dimensions,
+-- so a 3072-dim column cannot be indexed and falls back to a sequential scan.
+-- That is fine for a per-persona knowledge base. If you need ANN indexing at
+-- scale, switch to text-embedding-3-small (1536 dims) here and in .env.
+
+-- ----------------------------------------------------------------------------
+-- match_documents: semantic search over a single persona's knowledge base.
+-- Returns the top `match_count` chunks ordered by cosine similarity.
+-- ----------------------------------------------------------------------------
+create or replace function match_documents (
+  query_embedding   vector(3072),
+  match_count       int  default 8,
+  filter_persona_id uuid default null
 )
-RETURNS TABLE (
-  id BIGINT,
-  content TEXT,
-  metadata JSONB,
-  similarity FLOAT
+returns table (
+  id         bigint,
+  content    text,
+  metadata   jsonb,
+  similarity float
 )
-LANGUAGE plpgsql
-AS $$
-BEGIN
-  RETURN QUERY
-  SELECT
+language plpgsql
+as $$
+begin
+  return query
+  select
     d.id,
     d.content,
     d.metadata,
-    1 - (d.embedding <=> query_embedding) AS similarity
-  FROM documents d
-  WHERE (filter = '{}' OR d.metadata @> filter)
-  ORDER BY d.embedding <=> query_embedding
-  LIMIT match_count;
-END;
+    1 - (d.embedding <=> query_embedding) as similarity
+  from documents d
+  where filter_persona_id is null or d.persona_id = filter_persona_id
+  order by d.embedding <=> query_embedding
+  limit match_count;
+end;
 $$;
+
+-- ----------------------------------------------------------------------------
+-- keep personas.updated_at fresh on every update
+-- ----------------------------------------------------------------------------
+create or replace function set_updated_at()
+returns trigger language plpgsql as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
+
+drop trigger if exists personas_set_updated_at on personas;
+create trigger personas_set_updated_at
+  before update on personas
+  for each row execute function set_updated_at();

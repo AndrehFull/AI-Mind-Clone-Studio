@@ -1,24 +1,44 @@
-# 🚀 Instruções de Instalação - Eugene Schwartz Brain
+# 🚀 Instruções de Instalação - Mind Clone Studio
 
 ## Pré-requisitos
 
-Certifique-se de ter instalado:
-- **Node.js** (versão 18 ou superior)
-- **npm** ou **yarn**
+Certifique-se de ter:
+- **Node.js** (versão 18 ou superior) — _ou_ apenas **Docker** (caminho mais simples)
+- Uma **API key da OpenAI** (https://platform.openai.com/api-keys)
 
-## Passo a Passo
+## Opção A — Docker (recomendado)
+
+```bash
+cp .env.example .env.local     # preencha OPENAI_API_KEY
+docker compose up --build
+```
+Sobe o app + Postgres/pgvector local com schema e seed automáticos. Acesse `http://localhost:3000`.
+
+## Opção B — Node local
 
 ### 1. Instalar Dependências
 ```bash
 npm install
 ```
 
-### 2. Executar o Projeto
+### 2. Configurar variáveis de ambiente
+```bash
+cp .env.example .env.local
+```
+Edite `.env.local` e preencha `OPENAI_API_KEY` e `DATABASE_URL` (seu Postgres com pgvector).
+
+### 3. Criar o banco de dados
+```bash
+psql "$DATABASE_URL" -f db/schema.sql
+psql "$DATABASE_URL" -f db/seed.sql   # opcional: persona de exemplo "Eugene Schwartz"
+```
+
+### 4. Executar o Projeto
 ```bash
 npm run dev
 ```
 
-### 3. Acessar a Aplicação
+### 5. Acessar a Aplicação
 Abra seu navegador e acesse: `http://localhost:3000`
 
 ## 🎯 Comandos Disponíveis

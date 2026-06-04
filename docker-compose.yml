@@ -1,0 +1,45 @@
+# Local test environment: Next.js app + Postgres (pgvector).
+#
+#   1. cp .env.example .env.local   (fill in OPENAI_API_KEY)
+#   2. docker compose up --build
+#   3. open http://localhost:3000
+#
+# The DB is seeded automatically from db/schema.sql and db/seed.sql on first run.
+# Embeddings/chat still call the OpenAI API — only the database is local.
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: mindclone
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # init scripts run in alphabetical order on an empty data dir
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./db/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d mindclone"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    env_file:
+      - .env.local
+    environment:
+      # Overrides whatever DATABASE_URL is in .env.local so the app always
+      # talks to the db service inside the compose network.
+      DATABASE_URL: postgres://postgres:postgres@db:5432/mindclone
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
