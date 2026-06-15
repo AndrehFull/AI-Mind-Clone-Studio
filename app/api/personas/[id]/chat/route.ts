@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import type { ChatCompletionMessageParam } from 'openai/resources/index'
 import { getPersona } from '@/lib/personas'
 import { buildContext } from '@/lib/rag'
+import { buildSystemPrompt } from '@/lib/prompt'
 import { chatStream } from '@/lib/openai'
 import type { ChatMessage } from '@/lib/types'
 
@@ -27,12 +28,12 @@ export async function POST(req: Request, { params }: Params) {
   const lastUser = [...messages].reverse().find((m) => m.role === 'user')?.content ?? ''
   const context = await buildContext(persona.id, lastUser)
 
-  const system = `${persona.system_prompt}
+  const system = `${buildSystemPrompt(persona)}
 
 ### CONTEXTO (memória da persona — trechos mais relevantes)
 ${context}
 
-Use o contexto acima como sua base de conhecimento. Se a resposta não estiver no contexto, responda com seu raciocínio e sinalize quando for inferência sua.`
+Use o contexto acima como memória factual. Se a resposta não estiver no contexto, responda com seu raciocínio mantendo sua identidade, e sinalize quando for inferência sua. Onde os fatos do contexto divergirem da sua identidade, o contexto prevalece.`
 
   const chatMessages: ChatCompletionMessageParam[] = [
     { role: 'system', content: system },

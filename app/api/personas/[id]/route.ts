@@ -21,7 +21,13 @@ export async function GET(_req: Request, { params }: Params) {
 /** PATCH /api/personas/:id */
 export async function PATCH(req: Request, { params }: Params) {
   try {
-    const patch = (await req.json()) as Partial<PersonaInput>
+    const body = (await req.json()) as Partial<PersonaInput>
+    // Profile fields are written only through the dedicated /profile route
+    // (which validates and enforces optimistic locking). Strip them here.
+    const { profile, profile_draft, profile_meta, ...patch } = body
+    void profile
+    void profile_draft
+    void profile_meta
     const persona = await updatePersona(params.id, patch)
     return NextResponse.json({ persona })
   } catch (err) {

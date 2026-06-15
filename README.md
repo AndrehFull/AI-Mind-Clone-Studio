@@ -47,6 +47,8 @@ A vetorização é feita pela API da OpenAI. O Postgres apenas armazena e pesqui
 ## Recursos
 
 * Múltiplas personas, cada uma com voz própria (system prompt) e base de conhecimento isolada.
+* **Camada de identidade**: um perfil estruturado (bio, voz, crenças, bordões, limites) destilado por IA e aprovado por você, injetado em toda resposta para manter o clone em personagem mesmo sem RAG.
+* **Onboarding por entrevista**: responda algumas perguntas e a IA monta o perfil para revisão.
 * Conversa com streaming de respostas.
 * Análise estruturada em JSON para personas que habilitam esse modo.
 * Ingestão de conhecimento dentro do app: cole texto ou suba arquivos (PDF, TXT, MD).
@@ -75,6 +77,9 @@ Acesse http://localhost:3000. Na primeira execução o banco é criado e populad
 | `npm run docker:down` | derruba os containers |
 | `npm run docker:reset` | derruba e apaga o volume do banco (recria do zero) |
 | `npm run docker:logs` | acompanha os logs |
+| `npm run migrate` | aplica o schema num banco já existente (idempotente) |
+
+> **Atualizando de uma versão anterior?** O `db/schema.sql` é idempotente. Rode `npm run migrate` (ou `npm run docker:reset` para recriar do zero) para criar as colunas da camada de identidade.
 
 ## Desenvolvimento com hot-reload
 
@@ -126,6 +131,12 @@ lib/            db, openai, rag, ingest, chunk, personas, documents, env, types
 db/             schema.sql e seed.sql
 scripts/        ingest.ts (CLI de ingestão)
 ```
+
+## Uso responsável
+
+O produto é para clonar a si mesmo ou alguém que consentiu. A criação exige
+confirmar consentimento e a destilação do perfil é grounded e revisada por humano.
+Veja [ETHICS.md](ETHICS.md).
 
 ## Licença
 

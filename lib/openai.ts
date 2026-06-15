@@ -45,17 +45,27 @@ export async function chat(messages: ChatCompletionMessageParam[]): Promise<stri
   return res.choices[0]?.message?.content ?? ''
 }
 
-/** Chat completion forced to return a JSON object. Returns the parsed value. */
+/**
+ * Chat completion forced to return a JSON object. Returns the parsed value.
+ * `temperature` defaults to the model default; pass 0 for deterministic
+ * extraction tasks (e.g. profile distillation).
+ */
 export async function chatJSON<T = unknown>(
-  messages: ChatCompletionMessageParam[]
+  messages: ChatCompletionMessageParam[],
+  opts: { temperature?: number } = {}
 ): Promise<T> {
   const res = await getOpenAI().chat.completions.create({
     model: env.chatModel(),
     messages,
     response_format: { type: 'json_object' },
+    ...(opts.temperature !== undefined ? { temperature: opts.temperature } : {}),
   })
   const content = res.choices[0]?.message?.content ?? '{}'
-  return JSON.parse(content) as T
+  try {
+    return JSON.parse(content) as T
+  } catch {
+    throw new Error('O modelo retornou um JSON inválido.')
+  }
 }
 
 /** Streaming chat completion. Yields text deltas as they arrive. */

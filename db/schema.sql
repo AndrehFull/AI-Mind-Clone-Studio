@@ -90,3 +90,17 @@ drop trigger if exists personas_set_updated_at on personas;
 create trigger personas_set_updated_at
   before update on personas
   for each row execute function set_updated_at();
+
+-- ----------------------------------------------------------------------------
+-- Identity layer (profile). Added via idempotent ALTERs so this file stays the
+-- single source of truth: re-run `psql -f db/schema.sql` (npm run migrate) on an
+-- existing database to upgrade it without losing data.
+--   profile        = approved identity, injected into every prompt
+--   profile_draft  = pending AI proposal awaiting human approval (null = none)
+--   profile_meta   = per-field provenance ('human' | 'distilled') for merge
+-- ----------------------------------------------------------------------------
+alter table personas add column if not exists profile            jsonb;
+alter table personas add column if not exists profile_draft      jsonb;
+alter table personas add column if not exists profile_meta       jsonb;
+alter table personas add column if not exists profile_updated_at timestamptz;
+alter table personas add column if not exists consent_ack        boolean not null default false;

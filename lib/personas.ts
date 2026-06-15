@@ -2,7 +2,9 @@ import { query, queryOne } from './db'
 import type { Persona, PersonaInput } from './types'
 
 const COLS = `id, slug, name, title, description, avatar_url,
-  system_prompt, analysis_prompt, analysis_schema, created_at, updated_at`
+  system_prompt, analysis_prompt, analysis_schema,
+  profile, profile_draft, profile_meta, profile_updated_at, consent_ack,
+  created_at, updated_at`
 
 /** Build a url-friendly slug from a name. */
 export function slugify(name: string): string {
@@ -41,8 +43,9 @@ export async function createPersona(input: PersonaInput): Promise<Persona> {
   const slug = await uniqueSlug(slugify(input.name))
   const row = await queryOne<Persona>(
     `insert into personas
-       (slug, name, title, description, avatar_url, system_prompt, analysis_prompt, analysis_schema)
-     values ($1, $2, $3, $4, $5, $6, $7, $8)
+       (slug, name, title, description, avatar_url, system_prompt, analysis_prompt, analysis_schema,
+        profile, profile_meta, consent_ack)
+     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
      returning ${COLS}`,
     [
       slug,
@@ -53,6 +56,9 @@ export async function createPersona(input: PersonaInput): Promise<Persona> {
       input.system_prompt,
       input.analysis_prompt ?? null,
       input.analysis_schema ? JSON.stringify(input.analysis_schema) : null,
+      input.profile ? JSON.stringify(input.profile) : null,
+      input.profile_meta ? JSON.stringify(input.profile_meta) : null,
+      input.consent_ack ?? false,
     ]
   )
   return row as Persona
@@ -78,6 +84,20 @@ export async function updatePersona(
   if (patch.analysis_prompt !== undefined) set('analysis_prompt', patch.analysis_prompt)
   if (patch.analysis_schema !== undefined) {
     set('analysis_schema', patch.analysis_schema ? JSON.stringify(patch.analysis_schema) : null)
+  }
+  if (patch.consent_ack !== undefined) set('consent_ack', patch.consent_ack)
+
+  // Profile fields are JSONB. Only a change to the APPROVED profile bumps
+  // profile_updated_at (the optimistic-lock token); saving a draft does not.
+  if (patch.profile !== undefined) {
+    set('profile', patch.profile ? JSON.stringify(patch.profile) : null)
+    fields.push(`profile_updated_at = now()`)
+  }
+  if (patch.profile_draft !== undefined) {
+    set('profile_draft', patch.profile_draft ? JSON.stringify(patch.profile_draft) : null)
+  }
+  if (patch.profile_meta !== undefined) {
+    set('profile_meta', patch.profile_meta ? JSON.stringify(patch.profile_meta) : null)
   }
 
   if (fields.length === 0) {

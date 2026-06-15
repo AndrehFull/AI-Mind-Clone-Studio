@@ -27,6 +27,12 @@ export async function POST(req: Request) {
         { status: 400 }
       )
     }
+    if (!body.consent_ack) {
+      return NextResponse.json(
+        { error: 'É necessário confirmar o consentimento para criar uma persona.' },
+        { status: 400 }
+      )
+    }
     const persona = await createPersona(body)
     return NextResponse.json({ persona }, { status: 201 })
   } catch (err) {

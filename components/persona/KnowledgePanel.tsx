@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Upload, FileText, Trash2, Loader2, Plus } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { Upload, FileText, Trash2, Loader2, Plus, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -16,7 +17,10 @@ export default function KnowledgePanel({ persona }: { persona: Persona }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
+  const [lastDeleted, setLastDeleted] = useState<string | null>(null)
+  const [redistilling, setRedistilling] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
+  const router = useRouter()
 
   const refresh = async () => {
     setLoadingList(true)
@@ -89,9 +93,34 @@ export default function KnowledgePanel({ persona }: { persona: Persona }) {
         `/api/personas/${persona.id}/documents?source=${encodeURIComponent(source)}`,
         { method: 'DELETE' }
       )
-      if (res.ok) refresh()
+      if (res.ok) {
+        setLastDeleted(source)
+        refresh()
+      }
     } finally {
       setBusy(false)
+    }
+  }
+
+  // Profile is curated and does not "unlearn" when a source is deleted; offer it.
+  const reDistill = async () => {
+    setRedistilling(true)
+    setError(null)
+    try {
+      const res = await fetch(`/api/personas/${persona.id}/profile/distill`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ source: 'sources' }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || `Erro ${res.status}`)
+      setLastDeleted(null)
+      setNotice('Perfil re-destilado. Revise a proposta na aba Perfil.')
+      router.refresh()
+    } catch (err) {
+      setError((err as Error).message)
+    } finally {
+      setRedistilling(false)
     }
   }
 
@@ -141,9 +170,43 @@ export default function KnowledgePanel({ persona }: { persona: Persona }) {
           </Button>
         </div>
 
+        <p className="text-xs text-gray-500">
+          Apenas o conteúdo de texto do arquivo é extraído e indexado. O arquivo em si não é
+          armazenado e não ficará disponível para download depois.
+        </p>
+
         {notice && <p className="text-sm text-green-400">{notice}</p>}
         {error && <p className="text-sm text-red-400">{error}</p>}
       </div>
+
+      {/* Offer to re-distill the profile after a source was removed */}
+      {lastDeleted && (
+        <div className="hud-border rounded-2xl bg-black/30 p-4 border-neon-purple/40 flex items-center justify-between gap-3">
+          <p className="text-sm text-gray-300">
+            Fonte removida do RAG. O perfil não esquece sozinho o que aprendeu dela.
+          </p>
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
+              onClick={reDistill}
+              variant="outline"
+              size="sm"
+              disabled={redistilling}
+              className="border-neon-purple/40 text-neon-purple hover:bg-neon-purple/10"
+            >
+              {redistilling ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <span className="flex items-center gap-1">
+                  <Sparkles className="w-4 h-4" /> Re-destilar perfil
+                </span>
+              )}
+            </Button>
+            <button onClick={() => setLastDeleted(null)} className="text-gray-500 hover:text-white text-sm">
+              Agora não
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Existing sources */}
       <div className="hud-border rounded-2xl bg-black/30 p-5">

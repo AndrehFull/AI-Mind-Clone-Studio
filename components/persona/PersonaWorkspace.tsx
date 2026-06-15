@@ -4,23 +4,25 @@ import { useState } from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { Canvas } from '@react-three/fiber'
-import { ArrowLeft, MessageSquare, BarChart3, BookOpen } from 'lucide-react'
+import { ArrowLeft, MessageSquare, BarChart3, BookOpen, Fingerprint } from 'lucide-react'
 import type { Persona } from '@/lib/types'
 import ChatPanel from './ChatPanel'
 import AnalysisPanel from './AnalysisPanel'
 import KnowledgePanel from './KnowledgePanel'
+import ProfilePanel from './ProfilePanel'
 
 // Three.js canvas must stay client-only.
 const Brain3D = dynamic(() => import('@/components/Brain3D'), { ssr: false })
 
-type Tab = 'chat' | 'analysis' | 'knowledge'
+type Tab = 'chat' | 'profile' | 'analysis' | 'knowledge'
 
 export default function PersonaWorkspace({ persona }: { persona: Persona }) {
   const [tab, setTab] = useState<Tab>('chat')
   const [isProcessing, setIsProcessing] = useState(false)
 
-  const tabs: { key: Tab; label: string; icon: typeof MessageSquare; show: boolean }[] = [
+  const tabs: { key: Tab; label: string; icon: typeof MessageSquare; show: boolean; badge?: boolean }[] = [
     { key: 'chat', label: 'Conversar', icon: MessageSquare, show: true },
+    { key: 'profile', label: 'Perfil', icon: Fingerprint, show: true, badge: !!persona.profile_draft },
     { key: 'analysis', label: 'Análise', icon: BarChart3, show: !!persona.analysis_prompt },
     { key: 'knowledge', label: 'Conhecimento', icon: BookOpen, show: true },
   ]
@@ -62,11 +64,15 @@ export default function PersonaWorkspace({ persona }: { persona: Persona }) {
                 }`}
               >
                 <t.icon className="w-4 h-4" /> {t.label}
+                {t.badge && (
+                  <span className="w-2 h-2 rounded-full bg-neon-purple animate-pulse-neon" aria-label="proposta pendente" />
+                )}
               </button>
             ))}
           </div>
 
           {tab === 'chat' && <ChatPanel persona={persona} onProcessing={setIsProcessing} />}
+          {tab === 'profile' && <ProfilePanel persona={persona} onProcessing={setIsProcessing} />}
           {tab === 'analysis' && persona.analysis_prompt && (
             <AnalysisPanel persona={persona} onProcessing={setIsProcessing} />
           )}

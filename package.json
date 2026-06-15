@@ -9,6 +9,8 @@
     "start": "next start",
     "lint": "next lint",
     "ingest": "tsx scripts/ingest.ts",
+    "migrate": "psql \"$DATABASE_URL\" -f db/schema.sql",
+    "eval": "tsx scripts/eval.ts",
     "docker:up": "docker compose up --build",
     "docker:down": "docker compose down",
     "docker:reset": "docker compose down -v",

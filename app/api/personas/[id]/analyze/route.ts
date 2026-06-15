@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import type { ChatCompletionMessageParam } from 'openai/resources/index'
 import { getPersona } from '@/lib/personas'
 import { retrieveChunks, formatContext, extractUrls } from '@/lib/rag'
+import { buildSystemPrompt } from '@/lib/prompt'
 import { chatJSON } from '@/lib/openai'
 
 export const runtime = 'nodejs'
@@ -43,7 +44,7 @@ export async function POST(req: Request, { params }: Params) {
         )}`
       : ''
 
-    const system = `${persona.system_prompt}\n\n${persona.analysis_prompt}${schemaHint}\n\nResponda EXCLUSIVAMENTE com um objeto JSON válido.`
+    const system = `${buildSystemPrompt(persona)}\n\n${persona.analysis_prompt}${schemaHint}\n\nResponda EXCLUSIVAMENTE com um objeto JSON válido.`
 
     const user = `### TEXTO PARA ANÁLISE\n${input}\n\n### FONTES CITADAS NO TEXTO\n${
       urls.length ? urls.join('\n') : '(nenhuma)'
