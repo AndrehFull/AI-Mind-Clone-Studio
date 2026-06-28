@@ -1,104 +1,126 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --background: 222.2 84% 4.9%;
-  --foreground: 210 40% 98%;
-  --card: 222.2 84% 4.9%;
-  --card-foreground: 210 40% 98%;
-  --popover: 222.2 84% 4.9%;
-  --popover-foreground: 210 40% 98%;
-  --primary: 217.2 91.2% 59.8%;
-  --primary-foreground: 222.2 84% 4.9%;
-  --secondary: 217.2 32.6% 17.5%;
-  --secondary-foreground: 210 40% 98%;
-  --muted: 217.2 32.6% 17.5%;
-  --muted-foreground: 215 20.2% 65.1%;
-  --accent: 217.2 32.6% 17.5%;
-  --accent-foreground: 210 40% 98%;
-  --destructive: 0 62.8% 30.6%;
+  /* ---- Connectome palette (raw, used by canvas/JS and inline styles) ---- */
+  --c-bg: #04050a;
+  --c-surface: rgba(16, 20, 30, 0.62);
+  --c-surface-2: rgba(26, 32, 46, 0.7);
+  --c-surface-3: rgba(40, 48, 66, 0.6);
+  --c-line: rgba(150, 180, 255, 0.12);
+  --c-line-2: rgba(150, 180, 255, 0.26);
+  --c-ink: #eef2fb;
+  --c-ink-2: #9aa6bd;
+  --c-ink-3: #5f6a82;
+  --c-accent: #22d3ee;
+  --c-accent-strong: #0aa5c2;
+  --c-accent-soft: rgba(34, 211, 238, 0.14);
+  --c-accent-ink: #03222a;
+  --c-good: #34e0a1;
+  --c-hot: #ff5fa8;
+  --c-shadow: 0 40px 100px -40px rgba(0, 0, 0, 0.85);
+
+  /* ---- shadcn tokens (retuned to the connectome theme) ---- */
+  --background: 230 43% 4%;
+  --foreground: 222 60% 96%;
+  --card: 228 28% 9%;
+  --card-foreground: 222 60% 96%;
+  --popover: 228 28% 9%;
+  --popover-foreground: 222 60% 96%;
+  --primary: 187 82% 53%;
+  --primary-foreground: 190 88% 8%;
+  --secondary: 225 22% 18%;
+  --secondary-foreground: 222 60% 96%;
+  --muted: 225 22% 16%;
+  --muted-foreground: 220 14% 64%;
+  --accent: 187 82% 53%;
+  --accent-foreground: 190 88% 8%;
+  --destructive: 0 72% 45%;
   --destructive-foreground: 210 40% 98%;
-  --border: 217.2 32.6% 17.5%;
-  --input: 217.2 32.6% 17.5%;
-  --ring: 224.3 76.3% 94.1%;
-  --radius: 0.5rem;
+  --border: 225 30% 18%;
+  --input: 225 30% 18%;
+  --ring: 187 82% 53%;
+  --radius: 0.75rem;
 }
 
 * {
-  border-color: hsl(var(--border));
+  box-sizing: border-box;
+  border-color: var(--c-line);
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
 }
 
 body {
-  color: hsl(var(--foreground));
-  background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
-  font-family: 'Inter', sans-serif;
+  color: var(--c-ink);
+  background: var(--c-bg);
+  font-family: var(--font-geist-sans), -apple-system, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
   overflow-x: hidden;
 }
 
-.neon-glow {
-  box-shadow: 
-    0 0 1px currentColor,
-    0 0 2px currentColor,
-    0 0 3px currentColor;
-}
-
-.neon-text {
-  text-shadow: 
-    0 0 1px currentColor,
-    0 0 2px currentColor,
-    0 0 3px currentColor;
-}
-
-.hud-border {
-  border: 1px solid rgba(0, 212, 255, 0.3);
-  background: rgba(0, 212, 255, 0.05);
-  backdrop-filter: blur(10px);
-}
-
-.neural-network-bg {
-  background-image: 
-    radial-gradient(circle at 20% 80%, rgba(0, 212, 255, 0.1) 0%, transparent 50%),
-    radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
-    radial-gradient(circle at 40% 40%, rgba(0, 255, 255, 0.05) 0%, transparent 50%);
-}
-
-.particle {
-  position: absolute;
-  background: radial-gradient(circle, rgba(0, 212, 255, 0.8) 0%, transparent 70%);
-  border-radius: 50%;
-  pointer-events: none;
-}
-
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.3);
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(0, 212, 255, 0.5);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 212, 255, 0.8);
-}
-
-/* Selection color */
 ::selection {
-  background: rgba(0, 212, 255, 0.3);
-  color: #ffffff;
+  background: var(--c-accent);
+  color: var(--c-accent-ink);
 }
 
-/* Focus styles */
-.focus-neon:focus {
-  outline: none;
-  border-color: #00D4FF;
-  box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.3);
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--c-line-2);
+  border-radius: 9px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ---- keyframes used by the scene overlays + toasts (inline styles) ---- */
+@keyframes scan {
+  0% { transform: translateY(-10vh); }
+  100% { transform: translateY(110vh); }
+}
+@keyframes livedot {
+  0% { box-shadow: 0 0 0 0 rgba(52, 224, 161, 0.5); }
+  70% { box-shadow: 0 0 0 7px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+@keyframes toastin {
+  from { opacity: 0; transform: translate(-50%, 16px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+@keyframes flick {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 0.9; }
+}
+
+/* ---- glass surface helper (replaces the old neon hud-border) ---- */
+.glass {
+  background: var(--c-surface);
+  border: 1px solid var(--c-line);
+  backdrop-filter: blur(12px);
+}
+
+/* Legacy aliases kept until every screen is rethemed (phase 4). */
+.hud-border {
+  border: 1px solid var(--c-line);
+  background: var(--c-surface);
+  backdrop-filter: blur(12px);
+}
+.neon-text {
+  text-shadow: 0 0 18px rgba(34, 211, 238, 0.45);
+}
+.neon-glow {
+  box-shadow: 0 0 0 1px var(--c-line-2), 0 18px 40px -18px rgba(34, 211, 238, 0.5);
+}
+.neural-network-bg {
+  background-image: none;
 }

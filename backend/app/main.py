@@ -27,10 +27,14 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Mind Clone Studio API", lifespan=lifespan)
 
+# Local/self-hosted tool: allow any origin by default so the browser can reach
+# the API whether it's served from localhost, 127.0.0.1 or a LAN IP. Set
+# WEB_ORIGIN to a specific origin to lock it down (then credentials are allowed).
+_allow_all = settings.web_origin == "*"
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[settings.web_origin],
-    allow_credentials=True,
+    allow_origins=["*"] if _allow_all else [settings.web_origin],
+    allow_credentials=not _allow_all,
     allow_methods=["*"],
     allow_headers=["*"],
 )

@@ -16,8 +16,10 @@ class Settings(BaseSettings):
     openai_chat_model: str = "gpt-4o"
     # Postgres connection string (with pgvector). Local Docker or Supabase direct.
     database_url: str
-    # Origin allowed by CORS (the Next frontend).
-    web_origin: str = "http://localhost:3000"
+    # Origin allowed by CORS. "*" (default) allows any origin — fine for a local
+    # self-hosted tool. Set to a specific origin (e.g. https://app.exemplo.com)
+    # to lock it down.
+    web_origin: str = "*"
 
     # Local dev: pick up the repo-root .env.local when running from backend/.
     model_config = SettingsConfigDict(env_file="../.env.local", extra="ignore")
