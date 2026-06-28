@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { computeDiff, emptyProfile, FIELDS, FIELD_LABELS } from '@/lib/profile-shared'
+import { apiFetch } from '@/lib/api'
 import type { Persona, Profile, ProfileField, ProfileMeta } from '@/lib/types'
 
 type Choice = 'current' | 'proposed'
@@ -57,7 +58,7 @@ function DraftReview({ persona }: { persona: Persona }) {
       if (useProposed) meta[f] = 'distilled'
     }
     try {
-      const res = await fetch(`/api/personas/${persona.id}/profile`, {
+      const res = await apiFetch(`/personas/${persona.id}/profile`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ profile: out, profile_meta: meta, profile_updated_at: persona.profile_updated_at }),
@@ -74,7 +75,7 @@ function DraftReview({ persona }: { persona: Persona }) {
   const discard = async () => {
     if (!confirm('Descartar a proposta da IA?')) return
     setBusy(true)
-    await fetch(`/api/personas/${persona.id}/profile`, { method: 'DELETE' })
+    await apiFetch(`/personas/${persona.id}/profile`, { method: 'DELETE' })
     router.refresh()
   }
 
@@ -184,7 +185,7 @@ function ProfileEditor({
     // Everything in this editor is human-authored.
     const meta = Object.fromEntries(FIELDS.map((f) => [f, 'human'])) as Record<ProfileField, 'human'>
     try {
-      const res = await fetch(`/api/personas/${persona.id}/profile`, {
+      const res = await apiFetch(`/personas/${persona.id}/profile`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ profile: p, profile_meta: meta, profile_updated_at: persona.profile_updated_at }),
@@ -206,7 +207,7 @@ function ProfileEditor({
     setNotice(null)
     onProcessing(true)
     try {
-      const res = await fetch(`/api/personas/${persona.id}/profile/distill`, {
+      const res = await apiFetch(`/personas/${persona.id}/profile/distill`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ source: 'sources', archetype: p.archetype, language: p.language }),

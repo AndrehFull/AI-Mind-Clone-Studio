@@ -6,6 +6,7 @@ import remarkGfm from 'remark-gfm'
 import { Send, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
+import { apiFetch } from '@/lib/api'
 import type { ChatMessage, Persona } from '@/lib/types'
 
 export default function ChatPanel({
@@ -37,7 +38,7 @@ export default function ChatPanel({
     onProcessing(true)
 
     try {
-      const res = await fetch(`/api/personas/${persona.id}/chat`, {
+      const res = await apiFetch(`/personas/${persona.id}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messages: next }),

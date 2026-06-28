@@ -6,8 +6,13 @@ import { Upload, FileText, Trash2, Loader2, Plus, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { apiFetch } from '@/lib/api'
 import type { Persona } from '@/lib/types'
-import type { KnowledgeSource } from '@/lib/documents'
+
+interface KnowledgeSource {
+  source: string
+  chunks: number
+}
 
 export default function KnowledgePanel({ persona }: { persona: Persona }) {
   const [sources, setSources] = useState<KnowledgeSource[]>([])
@@ -25,7 +30,7 @@ export default function KnowledgePanel({ persona }: { persona: Persona }) {
   const refresh = async () => {
     setLoadingList(true)
     try {
-      const res = await fetch(`/api/personas/${persona.id}/documents`)
+      const res = await apiFetch(`/personas/${persona.id}/documents`)
       const data = await res.json()
       if (res.ok) setSources(data.sources)
     } finally {
@@ -44,7 +49,7 @@ export default function KnowledgePanel({ persona }: { persona: Persona }) {
     setError(null)
     setNotice(null)
     try {
-      const res = await fetch(`/api/personas/${persona.id}/documents`, {
+      const res = await apiFetch(`/personas/${persona.id}/documents`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text, source: sourceName || undefined }),
@@ -69,7 +74,7 @@ export default function KnowledgePanel({ persona }: { persona: Persona }) {
     try {
       const fd = new FormData()
       fd.append('file', file)
-      const res = await fetch(`/api/personas/${persona.id}/documents/upload`, {
+      const res = await apiFetch(`/personas/${persona.id}/documents/upload`, {
         method: 'POST',
         body: fd,
       })
@@ -89,8 +94,8 @@ export default function KnowledgePanel({ persona }: { persona: Persona }) {
     if (!confirm(`Remover "${source}" da base de conhecimento?`)) return
     setBusy(true)
     try {
-      const res = await fetch(
-        `/api/personas/${persona.id}/documents?source=${encodeURIComponent(source)}`,
+      const res = await apiFetch(
+        `/personas/${persona.id}/documents?source=${encodeURIComponent(source)}`,
         { method: 'DELETE' }
       )
       if (res.ok) {
@@ -107,7 +112,7 @@ export default function KnowledgePanel({ persona }: { persona: Persona }) {
     setRedistilling(true)
     setError(null)
     try {
-      const res = await fetch(`/api/personas/${persona.id}/profile/distill`, {
+      const res = await apiFetch(`/personas/${persona.id}/profile/distill`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ source: 'sources' }),

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import InterviewWizard from '@/components/persona/InterviewWizard'
+import { apiFetch } from '@/lib/api'
 import type { Archetype } from '@/lib/types'
 
 type Mode = 'manual' | 'interview'
@@ -60,7 +61,7 @@ export default function PersonaForm() {
         ? systemPrompt
         : `Você é o clone digital de ${name}. Responda sempre na primeira pessoa, como ${name}, incorporando fielmente a identidade definida no perfil. Use o contexto fornecido como memória.`
 
-    const res = await fetch('/api/personas', {
+    const res = await apiFetch('/personas', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

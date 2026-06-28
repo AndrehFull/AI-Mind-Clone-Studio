@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { Plus, AlertTriangle } from 'lucide-react'
 import ParticleBackground from '@/components/ParticleBackground'
 import PersonaCard from '@/components/PersonaCard'
-import { listPersonas, countDocuments } from '@/lib/personas'
+import { apiUrl } from '@/lib/api'
 import type { Persona } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
@@ -11,11 +11,10 @@ async function loadPersonas(): Promise<
   { ok: true; personas: (Persona & { document_count: number })[] } | { ok: false; error: string }
 > {
   try {
-    const personas = await listPersonas()
-    const withCounts = await Promise.all(
-      personas.map(async (p) => ({ ...p, document_count: await countDocuments(p.id) }))
-    )
-    return { ok: true, personas: withCounts }
+    const res = await fetch(apiUrl('/personas'), { cache: 'no-store' })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.error || `Erro ${res.status}`)
+    return { ok: true, personas: data.personas }
   } catch (err) {
     return { ok: false, error: (err as Error).message }
   }
@@ -44,11 +43,10 @@ export default async function Home() {
             <AlertTriangle className="w-10 h-10 text-amber-400 mx-auto" />
             <h2 className="font-orbitron text-xl text-white">Configuração necessária</h2>
             <p className="text-sm text-gray-300">
-              Não foi possível conectar ao banco. Suba com{' '}
-              <code className="text-neon-cyan">docker compose up</code>, ou copie{' '}
-              <code className="text-neon-cyan">.env.example</code> para{' '}
-              <code className="text-neon-cyan">.env.local</code>, preencha as chaves e rode{' '}
-              <code className="text-neon-cyan">db/schema.sql</code> no seu Postgres.
+              Não foi possível falar com a API. Suba a stack com{' '}
+              <code className="text-neon-cyan">docker compose up</code>, ou rode o backend
+              (<code className="text-neon-cyan">uvicorn app.main:app</code>) e confira a
+              variável <code className="text-neon-cyan">NEXT_PUBLIC_API_BASE_URL</code>.
             </p>
             <p className="text-xs text-gray-500 break-words">{result.error}</p>
           </div>

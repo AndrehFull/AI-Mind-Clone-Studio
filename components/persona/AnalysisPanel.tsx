@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Sparkles, Loader2, Code, Eye } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
+import { apiFetch } from '@/lib/api'
 import type { Persona } from '@/lib/types'
 
 /** Turn snake_case / camelCase keys into a readable label. */
@@ -81,7 +82,7 @@ export default function AnalysisPanel({
     setResult(null)
     onProcessing(true)
     try {
-      const res = await fetch(`/api/personas/${persona.id}/analyze`, {
+      const res = await apiFetch(`/personas/${persona.id}/analyze`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ input }),

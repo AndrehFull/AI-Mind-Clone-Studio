@@ -1,8 +1,8 @@
-# Local test environment: Next.js app + Postgres (pgvector).
+# Local stack: Postgres (pgvector) + FastAPI backend + Next.js frontend.
 #
 #   1. cp .env.example .env.local   (fill in OPENAI_API_KEY)
 #   2. docker compose up --build
-#   3. open http://localhost:3000
+#   3. open http://localhost:3000   (API at http://localhost:8000)
 #
 # The DB is seeded automatically from db/schema.sql and db/seed.sql on first run.
 # Embeddings/chat still call the OpenAI API — only the database is local.
@@ -27,18 +27,39 @@ services:
       timeout: 5s
       retries: 10
 
-  app:
-    build: .
+  api:
+    build: ./backend
     env_file:
       - .env.local
     environment:
-      # Overrides whatever DATABASE_URL is in .env.local so the app always
-      # talks to the db service inside the compose network.
+      # Reach the db service inside the compose network (overrides .env.local).
       DATABASE_URL: postgres://postgres:postgres@db:5432/mindclone
+      # Allow the browser app to call this API.
+      WEB_ORIGIN: http://localhost:3000
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\""]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build:
+      context: .
+      args:
+        # NEXT_PUBLIC_* must be present at build time (baked into the client bundle).
+        NEXT_PUBLIC_API_BASE_URL: http://localhost:8000
+    environment:
+      # Server-side rendering reaches the API over the compose network.
+      API_INTERNAL_URL: http://api:8000
     ports:
       - "3000:3000"
     depends_on:
-      db:
+      api:
         condition: service_healthy
 
 volumes:

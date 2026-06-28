@@ -5,6 +5,7 @@ import { Loader2, ArrowRight, ArrowLeft, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { getInterviewQuestions } from '@/lib/interview'
+import { apiFetch } from '@/lib/api'
 import type { Archetype } from '@/lib/types'
 
 /**
@@ -42,7 +43,7 @@ export default function InterviewWizard({
         .filter((a) => a.answer.trim())
       if (payload.length === 0) throw new Error('Responda ao menos uma pergunta.')
 
-      const res = await fetch(`/api/personas/${personaId}/profile/distill`, {
+      const res = await apiFetch(`/personas/${personaId}/profile/distill`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ source: 'interview', answers: payload, archetype, language }),
