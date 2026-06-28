@@ -42,7 +42,7 @@ Cada interação segue o mesmo pipeline:
 3. Esses trechos entram como contexto no prompt.
 4. O modelo de chat responde na voz da persona (modo conversa) ou devolve um JSON estruturado (modo análise).
 
-A vetorização é feita pela API da OpenAI. O Postgres apenas armazena e pesquisa os vetores, o que permite manter o banco totalmente local.
+A vetorização é feita pela API da OpenAI. O Postgres apenas armazena e pesquisa os vetores, o que permite manter o banco totalmente local. Esse pipeline roda no backend Python (FastAPI); o frontend Next só consome a API.
 
 ## Recursos
 
@@ -56,7 +56,11 @@ A vetorização é feita pela API da OpenAI. O Postgres apenas armazena e pesqui
 
 ## Stack
 
-Next.js 14 (App Router) e TypeScript, OpenAI para embeddings e chat, Postgres com pgvector como vector store, e Three.js na visualização do cérebro.
+Frontend em Next.js 14 (App Router) e TypeScript, com Three.js na visualização do cérebro. Backend em Python (FastAPI), responsável por banco, OpenAI (embeddings e chat), RAG e a camada de identidade. Postgres com pgvector como vector store. Frontend e backend conversam por HTTP.
+
+```
+Next (web, :3000)  ──HTTP──►  FastAPI (api, :8000)  ──►  Postgres + pgvector (db, :5432)
+```
 
 ## Começando com Docker
 
@@ -65,7 +69,7 @@ cp .env.example .env.local   # preencha OPENAI_API_KEY
 npm run docker:up
 ```
 
-Acesse http://localhost:3000. Na primeira execução o banco é criado e populado automaticamente a partir de `db/schema.sql` e `db/seed.sql`.
+Sobe os três serviços (`db`, `api`, `web`). Acesse http://localhost:3000 (a API fica em http://localhost:8000, com docs em `/docs`). Na primeira execução o banco é criado e populado automaticamente a partir de `db/schema.sql` e `db/seed.sql`.
 
 > Os embeddings e o chat usam a API da OpenAI, então a `OPENAI_API_KEY` é obrigatória. Apenas o banco roda localmente.
 
@@ -73,7 +77,7 @@ Acesse http://localhost:3000. Na primeira execução o banco é criado e populad
 
 | Script | Função |
 |--------|--------|
-| `npm run docker:up` | sobe o app e o banco |
+| `npm run docker:up` | sobe banco, API e frontend |
 | `npm run docker:down` | derruba os containers |
 | `npm run docker:reset` | derruba e apaga o volume do banco (recria do zero) |
 | `npm run docker:logs` | acompanha os logs |
@@ -83,33 +87,56 @@ Acesse http://localhost:3000. Na primeira execução o banco é criado e populad
 
 ## Desenvolvimento com hot-reload
 
+Suba o backend (API) e o banco, depois o frontend:
+
 ```bash
-npm run dev
+# 1. API + banco (em containers)
+npm run dev          # predev sobe db e api; em seguida roda o Next com hot-reload
 ```
 
-O comando sobe o Postgres no Docker automaticamente (via `predev`) e inicia o Next com hot-reload. Para usar um Postgres externo (por exemplo Supabase), rode o `db/schema.sql` e o `db/seed.sql` nele, ajuste a `DATABASE_URL` no `.env.local` e use `npx next dev`.
+Para mexer no backend Python com reload, rode-o fora do Docker:
+
+```bash
+cd backend
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000   # lê ../.env.local
+```
+
+Para usar um Postgres externo (por exemplo Supabase), rode o `db/schema.sql` e o `db/seed.sql` nele e ajuste a `DATABASE_URL` no `.env.local`.
 
 ## Adicionando conhecimento
 
 Pelo app, abra uma persona, vá na aba Conhecimento e cole um texto ou suba um arquivo.
 
-Em massa, pela linha de comando:
+Em massa, pela linha de comando (CLI do backend):
 
 ```bash
-npm run ingest -- --persona eugene-schwartz ./livro.pdf
-npm run ingest -- --persona eugene-schwartz ./pasta-com-documentos
+cd backend
+python -m app.cli.ingest --persona eugene-schwartz ./livro.pdf
+python -m app.cli.ingest --persona eugene-schwartz ./pasta-com-documentos
+```
+
+E a avaliação A/B da camada de identidade (com vs sem perfil):
+
+```bash
+python -m app.cli.eval --persona eugene-schwartz --n 6
 ```
 
 ## API
 
+Servida pelo backend FastAPI (base `http://localhost:8000`). Docs interativas em `/docs`.
+
 | Método | Rota | Descrição |
 |--------|------|-----------|
-| `GET`, `POST` | `/api/personas` | listar e criar personas |
-| `GET`, `PATCH`, `DELETE` | `/api/personas/:id` | obter, editar e excluir |
-| `GET`, `POST`, `DELETE` | `/api/personas/:id/documents` | fontes, adicionar texto e remover fonte |
-| `POST` | `/api/personas/:id/documents/upload` | subir arquivo (multipart) |
-| `POST` | `/api/personas/:id/chat` | conversa com streaming |
-| `POST` | `/api/personas/:id/analyze` | análise estruturada em JSON |
+| `GET`, `POST` | `/personas` | listar e criar personas |
+| `GET`, `PATCH`, `DELETE` | `/personas/:id` | obter, editar e excluir |
+| `GET`, `POST`, `DELETE` | `/personas/:id/documents` | fontes, adicionar texto e remover fonte |
+| `POST` | `/personas/:id/documents/upload` | subir arquivo (multipart) |
+| `POST` | `/personas/:id/chat` | conversa com streaming |
+| `POST` | `/personas/:id/analyze` | análise estruturada em JSON |
+| `PATCH`, `DELETE` | `/personas/:id/profile` | aprovar perfil / descartar proposta |
+| `POST` | `/personas/:id/profile/distill` | destilar proposta de perfil |
 
 ## Configuração
 
@@ -119,17 +146,19 @@ npm run ingest -- --persona eugene-schwartz ./pasta-com-documentos
 | `OPENAI_EMBED_MODEL` | `text-embedding-3-large` | precisa casar com a dimensão 3072 do schema |
 | `OPENAI_CHAT_MODEL` | `gpt-4o` | qualquer modelo de chat da OpenAI |
 | `DATABASE_URL` | local | conexão Postgres com pgvector (local ou Supabase) |
+| `NEXT_PUBLIC_API_BASE_URL` | `http://localhost:8000` | onde o navegador alcança a API |
+| `API_INTERNAL_URL` | `http://localhost:8000` | onde o SSR alcança a API (rede do compose) |
 
 A tabela `documents` usa `vector(3072)`. Para trocar por `text-embedding-3-small` (1536 dimensões), ajuste o schema e o `.env.local`. O pgvector não indexa vetores acima de 2000 dimensões, então a busca em 3072 é sequencial, o que atende bem a uma base por persona.
 
 ## Estrutura
 
 ```
-app/            páginas e API routes
+app/            páginas Next (SSR) e layout
 components/     UI (persona/, Brain3D, cards e formulários)
-lib/            db, openai, rag, ingest, chunk, personas, documents, env, types
+lib/            api (cliente HTTP), types, profile-shared, interview, utils
+backend/        FastAPI: app/{config,db,llm,schemas,main}, services/, routers/, cli/
 db/             schema.sql e seed.sql
-scripts/        ingest.ts (CLI de ingestão)
 ```
 
 ## Uso responsável
