@@ -27,16 +27,22 @@ O projeto começou como um clone específico de Eugene Schwartz, autor de *Break
 
 <table>
   <tr>
-    <td width="50%"><img src="docs/screenshots/workspace.png" alt="Conversa com a persona"></td>
+    <td width="50%"><img src="docs/screenshots/explore.png" alt="Arquivo de mentes"></td>
+    <td width="50%"><img src="docs/screenshots/mind.png" alt="Mergulho na mente"></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>Drawer "Explorar mentes": cada pessoa com métricas reais</sub></td>
+    <td align="center"><sub>Mergulho no conectoma: painel com as camadas da mente</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/workspace.png" alt="Workspace da persona"></td>
     <td width="50%"><img src="docs/screenshots/new-persona.png" alt="Criação de persona"></td>
   </tr>
   <tr>
-    <td align="center"><sub>Workspace da persona: conversa, análise e conhecimento</sub></td>
+    <td align="center"><sub>Workspace: conversa, perfil, análise e conhecimento</sub></td>
     <td align="center"><sub>Criação de um novo clone</sub></td>
   </tr>
 </table>
-
-> As imagens podem refletir uma versão anterior. A interface foi redesenhada para o tema **Connectome** (fonte Geist, fundo escuro, cérebro em canvas) — rode o projeto para ver o visual atual.
 
 ## Como funciona
 
