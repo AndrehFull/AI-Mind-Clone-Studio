@@ -1,18 +1,15 @@
 'use client'
 
 import { useState } from 'react'
-import dynamic from 'next/dynamic'
 import Link from 'next/link'
-import { Canvas } from '@react-three/fiber'
 import { ArrowLeft, MessageSquare, BarChart3, BookOpen, Fingerprint } from 'lucide-react'
 import type { Persona } from '@/lib/types'
+import BrainScene from '@/components/brain/BrainScene'
+import { SceneOverlays } from '@/components/brain/overlays'
 import ChatPanel from './ChatPanel'
 import AnalysisPanel from './AnalysisPanel'
 import KnowledgePanel from './KnowledgePanel'
 import ProfilePanel from './ProfilePanel'
-
-// Three.js canvas must stay client-only.
-const Brain3D = dynamic(() => import('@/components/Brain3D'), { ssr: false })
 
 type Tab = 'chat' | 'profile' | 'analysis' | 'knowledge'
 
@@ -36,16 +33,14 @@ export default function PersonaWorkspace({ persona }: { persona: Persona }) {
       <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-8 items-start">
         {/* Left: 3D brain + identity */}
         <div className="space-y-4">
-          <div className="relative h-[320px] rounded-2xl overflow-hidden hud-border">
-            <Canvas camera={{ position: [0, 0, 8], fov: 60 }} style={{ background: 'transparent' }}>
-              <Brain3D useRealModel modelUrl="/models/Brain_3d.glb" isProcessing={isProcessing} />
-            </Canvas>
+          <div className="relative h-[320px] rounded-2xl overflow-hidden glass">
+            <BrainScene fixed={false} motion={isProcessing ? 'intense' : 'calm'} />
           </div>
-          <div className="hud-border rounded-2xl p-5 bg-black/30">
-            <h1 className="font-orbitron font-bold text-2xl text-white">{persona.name}</h1>
-            {persona.title && <p className="text-sm text-neon-cyan mt-1">{persona.title}</p>}
+          <div className="glass rounded-2xl p-5">
+            <h1 className="font-semibold text-2xl text-c-ink">{persona.name}</h1>
+            {persona.title && <p className="text-sm text-c-accent mt-1">{persona.title}</p>}
             {persona.description && (
-              <p className="text-sm text-gray-400 mt-3 leading-relaxed">{persona.description}</p>
+              <p className="text-sm text-c-ink2 mt-3 leading-relaxed">{persona.description}</p>
             )}
           </div>
         </div>

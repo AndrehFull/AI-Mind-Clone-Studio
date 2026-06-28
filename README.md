@@ -7,6 +7,7 @@ Crie o clone digital da mente de qualquer pessoa. Alimente com documentos, conve
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![Next.js](https://img.shields.io/badge/Next.js-14-000000)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6)
+![FastAPI](https://img.shields.io/badge/FastAPI-Python-009688)
 ![Postgres](https://img.shields.io/badge/Postgres-pgvector-336791)
 ![OpenAI](https://img.shields.io/badge/OpenAI-embeddings%20%2B%20chat-412991)
 
@@ -18,7 +19,9 @@ Crie o clone digital da mente de qualquer pessoa. Alimente com documentos, conve
 
 Mind Clone Studio reproduz a forma de pensar e responder de uma pessoa. Você cadastra uma persona, dá a ela uma base de conhecimento (PDFs, textos, transcrições) e passa a conversar com o clone ou a pedir análises estruturadas. Cada resposta é fundamentada nos documentos daquela persona, recuperados por busca vetorial.
 
-O projeto começou como um clone específico de Eugene Schwartz, autor de *Breakthrough Advertising*, que hoje acompanha o repositório como persona de exemplo.
+A interface é um **conectoma cognitivo**: a home é um mapa neural vivo (renderizado em canvas) onde cada mente reconstruída é uma região do cérebro; ao abrir uma mente, uma animação de "mergulho" leva você para dentro dela.
+
+O projeto começou como um clone específico de Eugene Schwartz, autor de *Breakthrough Advertising*, que hoje acompanha o repositório como persona de exemplo (já com perfil aprovado e conhecimento de exemplo).
 
 ## Telas
 
@@ -33,6 +36,8 @@ O projeto começou como um clone específico de Eugene Schwartz, autor de *Break
   </tr>
 </table>
 
+> As imagens podem refletir uma versão anterior. A interface foi redesenhada para o tema **Connectome** (fonte Geist, fundo escuro, cérebro em canvas) — rode o projeto para ver o visual atual.
+
 ## Como funciona
 
 Cada interação segue o mesmo pipeline:
@@ -46,6 +51,7 @@ A vetorização é feita pela API da OpenAI. O Postgres apenas armazena e pesqui
 
 ## Recursos
 
+* **Home conectoma**: um cérebro neural animado (canvas 2D) onde cada persona é uma "mente"; ao selecioná-la, uma animação de mergulho (GSAP) abre o painel de detalhe. Os números dos cards são reais — memórias = trechos indexados, % de reconstrução = completude do perfil, camadas = os campos do perfil preenchidos.
 * Múltiplas personas, cada uma com voz própria (system prompt) e base de conhecimento isolada.
 * **Camada de identidade**: um perfil estruturado (bio, voz, crenças, bordões, limites) destilado por IA e aprovado por você, injetado em toda resposta para manter o clone em personagem mesmo sem RAG.
 * **Onboarding por entrevista**: responda algumas perguntas e a IA monta o perfil para revisão.
@@ -56,7 +62,7 @@ A vetorização é feita pela API da OpenAI. O Postgres apenas armazena e pesqui
 
 ## Stack
 
-Frontend em Next.js 14 (App Router) e TypeScript, com Three.js na visualização do cérebro. Backend em Python (FastAPI), responsável por banco, OpenAI (embeddings e chat), RAG e a camada de identidade. Postgres com pgvector como vector store. Frontend e backend conversam por HTTP.
+Frontend em Next.js 14 (App Router) e TypeScript, com fonte Geist e o conectoma renderizado em **canvas 2D** (malha neural + campo de neurônios) animado com **GSAP** — sem dependências 3D. Backend em Python (FastAPI), responsável por banco, OpenAI (embeddings e chat), RAG e a camada de identidade. Postgres com pgvector como vector store. Frontend e backend conversam por HTTP.
 
 ```
 Next (web, :3000)  ──HTTP──►  FastAPI (api, :8000)  ──►  Postgres + pgvector (db, :5432)
@@ -117,6 +123,15 @@ python -m app.cli.ingest --persona eugene-schwartz ./livro.pdf
 python -m app.cli.ingest --persona eugene-schwartz ./pasta-com-documentos
 ```
 
+O seed já cria o Eugene com um **perfil aprovado**. Para dar a ele uma base de
+conhecimento de exemplo (não vai no seed porque embeddings são gerados em runtime),
+carregue o arquivo incluso:
+
+```bash
+cd backend
+python -m app.cli.ingest --persona eugene-schwartz ../examples/eugene-schwartz-breakthrough.md
+```
+
 E a avaliação A/B da camada de identidade (com vs sem perfil):
 
 ```bash
@@ -155,10 +170,13 @@ A tabela `documents` usa `vector(3072)`. Para trocar por `text-embedding-3-small
 
 ```
 app/            páginas Next (SSR) e layout
-components/     UI (persona/, Brain3D, cards e formulários)
-lib/            api (cliente HTTP), types, profile-shared, interview, utils
+components/     brain/ (cena em canvas + overlays), home/ (HomeScene, PersonaViz),
+                persona/ (workspace e painéis), ui/ (primitivos), PersonaForm
+lib/            api (cliente HTTP), connectome, persona-metrics, profile-shared,
+                interview, types, utils
 backend/        FastAPI: app/{config,db,llm,schemas,main}, services/, routers/, cli/
 db/             schema.sql e seed.sql
+examples/       material de conhecimento de exemplo (Eugene)
 ```
 
 ## Uso responsável

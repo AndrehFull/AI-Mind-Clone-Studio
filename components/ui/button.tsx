@@ -15,9 +15,12 @@ const buttonVariants = cva(
           "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
         secondary:
           "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        ghost: "hover:bg-accent hover:text-accent-foreground",
-        link: "text-primary underline-offset-4 hover:underline",
-        neon: "bg-transparent border-2 border-neon-blue text-neon-blue hover:bg-neon-blue hover:text-black transition-all duration-300 neon-glow hover:neon-text font-orbitron font-semibold tracking-wider",
+        ghost: "hover:bg-white/5 hover:text-c-ink",
+        link: "text-c-accent underline-offset-4 hover:underline",
+        // Connectome primary: solid cyan, ink text (the prototype's main CTA).
+        neon: "bg-c-accent text-c-accentInk font-semibold hover:bg-c-accentStrong shadow-[inset_0_1px_0_rgba(255,255,255,.25),0_12px_34px_-12px_var(--c-accent)] transition-all",
+        accent: "bg-c-accent text-c-accentInk font-semibold hover:bg-c-accentStrong transition-all",
+        glass: "bg-c-surface text-c-ink border border-c-line2 backdrop-blur hover:bg-c-surface2 transition-all",
       },
       size: {
         default: "h-10 px-4 py-2",

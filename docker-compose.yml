@@ -34,8 +34,8 @@ services:
     environment:
       # Reach the db service inside the compose network (overrides .env.local).
       DATABASE_URL: postgres://postgres:postgres@db:5432/mindclone
-      # Allow the browser app to call this API.
-      WEB_ORIGIN: http://localhost:3000
+      # CORS: "*" lets the browser reach the API from localhost/127.0.0.1/LAN.
+      WEB_ORIGIN: "*"
     ports:
       - "8000:8000"
     depends_on:

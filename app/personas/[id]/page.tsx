@@ -1,5 +1,4 @@
 import { notFound } from 'next/navigation'
-import ParticleBackground from '@/components/ParticleBackground'
 import PersonaWorkspace from '@/components/persona/PersonaWorkspace'
 import { apiUrl } from '@/lib/api'
 
@@ -12,11 +11,8 @@ export default async function PersonaPage({ params }: { params: { id: string } }
   if (!data.persona) notFound()
 
   return (
-    <>
-      <ParticleBackground />
-      <main className="relative z-10 min-h-screen neural-network-bg">
-        <PersonaWorkspace persona={data.persona} />
-      </main>
-    </>
+    <main className="min-h-screen">
+      <PersonaWorkspace persona={data.persona} />
+    </main>
   )
 }
